@@ -32,10 +32,20 @@ async function handleChat(req, res) {
         categoryMatch = productCategory === intent.category.toLowerCase();
       }
 
-      // Price match
+      // Price range match
       let priceMatch = true;
-      if (intent.maxPrice !== undefined && intent.maxPrice !== null) {
-        priceMatch = productPrice <= intent.maxPrice;
+      if (intent.priceRange) {
+        const { min, max } = intent.priceRange;
+        if (min !== null && max !== null) {
+          // Both min and max specified
+          priceMatch = productPrice >= min && productPrice <= max;
+        } else if (min !== null) {
+          // Only min specified
+          priceMatch = productPrice >= min;
+        } else if (max !== null) {
+          // Only max specified
+          priceMatch = productPrice <= max;
+        }
       }
 
       // Smart filtering based on name and intent filters
@@ -48,6 +58,7 @@ async function handleChat(req, res) {
 
         // Check purpose (sport, casual, formal, etc.)
         if (purpose) {
+          // Only apply purpose filtering if it was explicitly specified
           const purposeKeywords = {
             sport: ["sport", "training", "running", "athletic", "gym"],
             casual: ["casual", "daily", "walking"],
@@ -60,9 +71,12 @@ async function handleChat(req, res) {
           ];
           purposeMatch = keywords.some(
             (keyword) =>
-              productName.includes(keyword) ||
+              productName.toLowerCase().includes(keyword) ||
               product.category.toLowerCase().includes(keyword)
           );
+        } else {
+          // If no purpose specified, show all products that match other criteria
+          purposeMatch = true;
         }
 
         // Check age group

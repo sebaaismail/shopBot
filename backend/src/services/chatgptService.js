@@ -1,6 +1,29 @@
 // backend/src/services/chatgptService.js
+/**
+ * @fileoverview Service for extracting shopping intents from user messages using OpenRouter API
+ * @version 1.0.0
+ */
 const axios = require("axios");
 
+/**
+ * Extracts shopping intent from a user message
+ * @param {string} message - The user's shopping request message
+ * @returns {Object} Parsed intent with category, price range, and filters
+ *
+ * Response format:
+ * {
+ *   category: string | null,    // Product category (sneakers, formal, sandals)
+ *   priceRange: {
+ *     min: number | null,       // Minimum price, null if not specified
+ *     max: number | null        // Maximum price, null if not specified
+ *   },
+ *   filters: {
+ *     purpose: string | null,   // Only set when explicitly mentioned (casual, sport, formal, comfort)
+ *     age_group: string | null, // Target demographic when specified
+ *     style: string | null      // Style preferences when mentioned
+ *   }
+ * }
+ */
 async function extractIntent(message) {
   try {
     const prompt = `Analyze this shopping request: "${message}" and extract detailed product preferences.
@@ -11,23 +34,33 @@ async function extractIntent(message) {
          - formal: dress shoes, business shoes, oxford, loafers
          - sandals: flip-flops, slides, beach footwear
       
-      2. Special Attributes (extract if mentioned):
-         - purpose: sport, casual, formal, training, running, etc.
-         - age_group: kids, adult, men, women
-         - style: comfortable, lightweight, professional, etc.
+      2. Price Analysis:
+         - For "between X and Y": set both minPrice and maxPrice
+         - For "under/below X": set minPrice to 0 and maxPrice to X
+         - For "above/over X": set minPrice to X and maxPrice to null
+         - Parse number ranges like "60-75" as minPrice and maxPrice
       
-      3. Price Range:
-         - Extract maximum price if mentioned
-         - Default to null if not specified
+      3. Purpose Detection:
+         - casual: everyday wear, regular use, casual style, basic shoes
+         - sport: athletic, training, running, gym, sports activities
+         - formal: business, dress, professional, office wear
+         - comfort: focus on comfort, walking, daily use
+      
+      4. Additional Attributes:
+         - age_group: kids, adult, men, women
+         - style: comfortable, lightweight, professional
       
       Respond with a JSON object exactly in this format:
       {
         "category": "sneakers",
-        "maxPrice": 40,
+        "priceRange": {
+          "min": 60,
+          "max": 75
+        },
         "filters": {
-          "purpose": "sport",
-          "age_group": "adult",
-          "style": "comfortable"
+          "purpose": null,  // Only set if explicitly mentioned in query
+          "age_group": null,  // Only set if explicitly mentioned in query
+          "style": null  // Only set if explicitly mentioned in query
         }
       }
       
@@ -41,7 +74,7 @@ async function extractIntent(message) {
           {
             role: "system",
             content:
-              "You are a product filter assistant. Extract category and maxPrice from the user request in JSON format: {category, maxPrice}",
+              "You are a product filter assistant. When no specific purpose is mentioned, do not set any purpose filter to show all matching products. Only set purpose when explicitly mentioned (e.g., 'sport shoes', 'formal shoes', 'casual shoes').",
           },
           {
             role: "user",
@@ -67,7 +100,10 @@ async function extractIntent(message) {
       const parsed = JSON.parse(content);
       return {
         category: parsed.category || null,
-        maxPrice: typeof parsed.maxPrice === "number" ? parsed.maxPrice : null,
+        priceRange: {
+          min: parsed.priceRange?.min || null,
+          max: parsed.priceRange?.max || null,
+        },
         filters: parsed.filters || {
           purpose: null,
           age_group: null,
