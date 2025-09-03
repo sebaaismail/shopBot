@@ -3,17 +3,33 @@ const axios = require("axios");
 
 async function extractIntent(message) {
   try {
-    const prompt = `Extract the specific product category and maximum price from this shopping request: "${message}".
-      Rules:
-      - For sneakers/running shoes/sports shoes, use category "sneakers"
-      - For formal shoes, use category "formal"
-      - For sandals/slippers, use category "sandals"
-      - Extract the exact maximum price number
-      - If no price mentioned, set maxPrice to null
-      - If no category is clearly specified, set category to null
+    const prompt = `Analyze this shopping request: "${message}" and extract detailed product preferences.
+
+      Rules for extraction:
+      1. Main Category:
+         - sneakers: running shoes, sport shoes, athletic footwear
+         - formal: dress shoes, business shoes, oxford, loafers
+         - sandals: flip-flops, slides, beach footwear
+      
+      2. Special Attributes (extract if mentioned):
+         - purpose: sport, casual, formal, training, running, etc.
+         - age_group: kids, adult, men, women
+         - style: comfortable, lightweight, professional, etc.
+      
+      3. Price Range:
+         - Extract maximum price if mentioned
+         - Default to null if not specified
       
       Respond with a JSON object exactly in this format:
-      {"category": "sneakers", "maxPrice": 40}
+      {
+        "category": "sneakers",
+        "maxPrice": 40,
+        "filters": {
+          "purpose": "sport",
+          "age_group": "adult",
+          "style": "comfortable"
+        }
+      }
       
       Only respond with the JSON, no other text.`;
 
@@ -52,6 +68,11 @@ async function extractIntent(message) {
       return {
         category: parsed.category || null,
         maxPrice: typeof parsed.maxPrice === "number" ? parsed.maxPrice : null,
+        filters: parsed.filters || {
+          purpose: null,
+          age_group: null,
+          style: null,
+        },
       };
     } catch (parseError) {
       console.error("Failed to parse OpenRouter response:", content);

@@ -1,6 +1,116 @@
 # ShopBot - E-commerce Product Finder Chatbot
 
-A smart chatbot that helps users find products based on natural language queries. Built with Node.js, Express, and Svelte, powered by OpenRouter AI.
+A smart chatbot that helps users find products based on natural language queries. Built with Node.js, Express, and Svelte, powered by OpenRouter AI and featuring the HKMS (Hierarchical Keyword-Match System) v1.0.
+
+## Technical Architecture
+
+### Current Implementation: HKMS v1.0 (Hierarchical Keyword-Match System)
+The current version implements a hierarchical pattern matching system that processes natural language queries through multiple layers of analysis.
+
+### Future Implementation: STEM v2.0 (Semantic Token Embedding Matching)
+The next version will implement semantic search using embeddings for more accurate matching:
+
+```javascript
+// Pseudo-code for STEM v2.0
+class SemanticProductMatcher {
+  async computeEmbedding(text) {
+    // Using sentence-transformers or OpenRouter embedding model
+    return await embeddingModel.encode(text);
+  }
+
+  async findSimilarProducts(query, threshold = 0.7) {
+    const queryEmbedding = await this.computeEmbedding(query);
+    
+    return products
+      .map(product => ({
+        product,
+        similarity: cosineSimilarity(
+          queryEmbedding,
+          product.precomputedEmbedding
+        )
+      }))
+      .filter(result => result.similarity > threshold)
+      .sort((a, b) => b.similarity - a.similarity);
+  }
+}
+```
+
+## Core Concepts and Terminology
+
+### Natural Language Understanding
+- **Intent**: The underlying purpose or goal of a user's query
+  - Example: "show me running shoes under $50"
+  - Intent Components:
+    - Action: show/find/search
+    - Product Category: running shoes
+    - Constraints: price < $50
+
+### Query Processing
+- **Token**: Individual words or phrases extracted from user input
+- **Entity**: Recognized objects (products, categories, prices)
+- **Attribute**: Product characteristics (price, style, purpose)
+- **Context**: Additional information that affects interpretation
+
+### Matching Systems
+
+#### HKMS v1.0 (Current)
+- **Hierarchical**: Multi-level classification system
+- **Keyword-based**: Pattern matching using predefined vocabularies
+- **Rule-based**: Explicit matching rules for different query types
+
+#### STEM v2.0 (Planned)
+- **Semantic**: Understanding meaning beyond exact matches
+- **Token**: Breaking down text into meaningful units
+- **Embedding**: Converting text to numerical vectors
+- **Matching**: Using vector similarity for results
+
+The SmartMatch™ algorithm is an intelligent product matching system that understands natural language queries without requiring complex database schemas. It works through:
+
+### 1. HKMS Components
+
+#### a. Intent Parser
+```javascript
+{
+  action: "find",           // Search intent
+  category: "sneakers",     // Product category
+  constraints: {            // Limiting factors
+    price: { max: 50 },
+    attributes: ["comfortable", "sport"]
+  }
+}
+```
+
+#### b. Hierarchical Classification
+- Level 1: Main Category (sneakers, formal, sandals)
+- Level 2: Sub-type (running, casual, dress)
+- Level 3: Attributes (comfortable, lightweight)
+
+#### c. Pattern Matching System
+```javascript
+{
+  "sport": ["sport", "training", "running", "athletic", "gym"],
+  "casual": ["casual", "daily", "walking"],
+  "formal": ["formal", "dress", "business"],
+  "comfort": ["comfort", "comfortable", "soft"]
+}
+```
+
+### 3. Contextual Understanding
+- Processes compound queries ("comfortable sport shoes under $50")
+- Handles implicit meanings ("professional shoes" → formal category)
+- Manages multiple constraints simultaneously
+
+### 4. Natural Language Processing Flow
+1. Query Analysis → Extract user intent
+2. Intent Transformation → Convert to searchable attributes
+3. Smart Filtering → Apply multi-dimensional matching
+4. Result Ranking → Sort by relevance
+
+### 5. Adaptive Matching
+- Fuzzy matching for product names
+- Contextual synonym handling
+- Flexible price range interpretation
+- Category association mapping
 
 ## Features
 
@@ -81,11 +191,65 @@ svelte-product-finder/
 
 ## Usage Examples
 
-You can ask the chatbot for products using natural language queries like:
+SmartMatch™ understands complex natural language queries. Here are some examples:
 
+### Basic Queries
 - "Show me sneakers under $40"
 - "I want formal shoes between $50 and $100"
 - "Find me comfortable sandals under $30"
+
+### Advanced Queries (SmartMatch™ Features)
+- Purpose-Specific: "I need professional shoes for work meetings"
+- Activity-Based: "Looking for lightweight running shoes"
+- Age-Targeted: "Kids sport shoes under $35"
+- Style-Focused: "Comfortable casual sneakers for daily wear"
+- Multi-Constraint: "Women's comfortable athletic shoes under $70"
+
+### Query Processing Pipeline
+
+Example Query: "comfortable sport shoes under $50"
+
+1. Intent Parsing (HKMS v1.0):
+```javascript
+{
+  "action": "find",
+  "category": "sneakers",
+  "constraints": {
+    "price": {
+      "max": 50,
+      "currency": "USD"
+    },
+    "attributes": ["comfortable", "sport"]
+  }
+}
+```
+
+2. Future Processing (STEM v2.0):
+```javascript
+// 1. Convert query to embedding
+const queryEmbedding = await encoder.encode(
+  "comfortable sport shoes under $50"
+);
+
+// 2. Compare with product embeddings
+const productEmbeddings = products.map(p => ({
+  id: p.id,
+  embedding: p.precomputedEmbedding
+}));
+
+// 3. Find similar products using cosine similarity
+const results = findSimilarProducts(
+  queryEmbedding, 
+  productEmbeddings,
+  0.7 // similarity threshold
+);
+```
+
+2. Smart Filtering:
+- Matches "sport" against ["sport", "training", "athletic", "gym"]
+- Matches "comfortable" against ["comfort", "comfortable", "soft"]
+- Applies price constraint ($50)
+- Ranks results by relevance
 
 ## Product Categories
 

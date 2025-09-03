@@ -22,6 +22,7 @@ async function handleChat(req, res) {
     };
 
     const filtered = products.filter((product) => {
+      const productName = product.name.toLowerCase();
       const productCategory = product.category.toLowerCase();
       const productPrice = Number(product.price);
 
@@ -37,7 +38,67 @@ async function handleChat(req, res) {
         priceMatch = productPrice <= intent.maxPrice;
       }
 
-      const matches = categoryMatch && priceMatch;
+      // Smart filtering based on name and intent filters
+      let purposeMatch = true;
+      let ageMatch = true;
+      let styleMatch = true;
+
+      if (intent.filters) {
+        const { purpose, age_group, style } = intent.filters;
+
+        // Check purpose (sport, casual, formal, etc.)
+        if (purpose) {
+          const purposeKeywords = {
+            sport: ["sport", "training", "running", "athletic", "gym"],
+            casual: ["casual", "daily", "walking"],
+            formal: ["formal", "dress", "business"],
+            comfort: ["comfort", "comfortable"],
+          };
+
+          const keywords = purposeKeywords[purpose.toLowerCase()] || [
+            purpose.toLowerCase(),
+          ];
+          purposeMatch = keywords.some(
+            (keyword) =>
+              productName.includes(keyword) ||
+              product.category.toLowerCase().includes(keyword)
+          );
+        }
+
+        // Check age group
+        if (age_group) {
+          const ageKeywords = {
+            kids: ["kids", "children", "youth"],
+            adult: ["adult", "men", "women"],
+            men: ["men"],
+            women: ["women"],
+          };
+
+          const keywords = ageKeywords[age_group.toLowerCase()] || [
+            age_group.toLowerCase(),
+          ];
+          ageMatch = keywords.some((keyword) => productName.includes(keyword));
+        }
+
+        // Check style
+        if (style) {
+          const styleKeywords = {
+            comfortable: ["comfort", "comfortable", "soft"],
+            lightweight: ["lightweight", "light"],
+            professional: ["professional", "business", "formal"],
+          };
+
+          const keywords = styleKeywords[style.toLowerCase()] || [
+            style.toLowerCase(),
+          ];
+          styleMatch = keywords.some((keyword) =>
+            productName.includes(keyword)
+          );
+        }
+      }
+
+      const matches =
+        categoryMatch && priceMatch && purposeMatch && ageMatch && styleMatch;
 
       console.log(
         `🔍 Checking: ${product.name} ($${productPrice}) | Category: ${productCategory} | categoryMatch=${categoryMatch} | priceMatch=${priceMatch} | FINAL=${matches}`
