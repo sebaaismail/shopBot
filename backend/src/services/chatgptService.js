@@ -1,9 +1,10 @@
 // backend/src/services/chatgptService.js
 /**
  * @fileoverview Service for extracting shopping intents from user messages using OpenRouter API
- * @version 1.0.0
+ * @version 2.0.0
  */
 const axios = require("axios");
+const { findSimilarProducts } = require("./embeddingService");
 
 /**
  * Extracts shopping intent from a user message
@@ -29,26 +30,28 @@ async function extractIntent(message) {
     const prompt = `Analyze this shopping request: "${message}" and extract detailed product preferences.
 
       Rules for extraction:
-      1. Main Category:
-         - sneakers: running shoes, sport shoes, athletic footwear
-         - formal: dress shoes, business shoes, oxford, loafers
-         - sandals: flip-flops, slides, beach footwear
+      1. Main Category (REQUIRED):
+         - sneakers: running shoes, sport shoes, athletic footwear, gym shoes
+         - formal: dress shoes, business shoes, oxford, loafers, professional footwear
+         - sandals: flip-flops, slides, beach footwear, summer shoes, open shoes
       
-      2. Price Analysis:
+      2. Price Analysis (ONLY when numbers mentioned):
          - For "between X and Y": set both minPrice and maxPrice
          - For "under/below X": set minPrice to 0 and maxPrice to X
          - For "above/over X": set minPrice to X and maxPrice to null
          - Parse number ranges like "60-75" as minPrice and maxPrice
       
-      3. Purpose Detection:
-         - casual: everyday wear, regular use, casual style, basic shoes
-         - sport: athletic, training, running, gym, sports activities
-         - formal: business, dress, professional, office wear
-         - comfort: focus on comfort, walking, daily use
+      3. Purpose Detection (ONLY set when EXPLICITLY mentioned):
+         - casual: ONLY when "casual" or "everyday" is explicitly mentioned
+         - sport: ONLY when "sport", "athletic", "running", "gym" is explicitly mentioned
+         - formal: ONLY when "formal", "business", "dress" is explicitly mentioned
+         - comfort: ONLY when "comfort" or "comfortable" is explicitly mentioned
       
-      4. Additional Attributes:
-         - age_group: kids, adult, men, women
-         - style: comfortable, lightweight, professional
+      4. Additional Attributes (ONLY set when EXPLICITLY mentioned):
+         - age_group: ONLY set when "kids", "adult", "men", "women" is explicitly mentioned
+         - style: NEVER set for descriptive words like "stylish", "nice", "good"
+                 ONLY set for specific style attributes: "lightweight", "professional", "waterproof"
+                 When in doubt, leave as null
       
       Respond with a JSON object exactly in this format:
       {
@@ -74,7 +77,16 @@ async function extractIntent(message) {
           {
             role: "system",
             content:
-              "You are a product filter assistant. When no specific purpose is mentioned, do not set any purpose filter to show all matching products. Only set purpose when explicitly mentioned (e.g., 'sport shoes', 'formal shoes', 'casual shoes').",
+              "You are a strict product filter assistant with seasonal awareness. For category selection:\n" +
+              "- Summer-related queries (e.g., 'summer shoes', 'beach shoes') -> category='sandals'\n" +
+              "- Sport-related queries (e.g., 'running shoes', 'gym shoes') -> category='sneakers'\n" +
+              "- Business/formal queries (e.g., 'office shoes', 'dress shoes') -> category='formal'\n\n" +
+              "NEVER infer filters, only set them when explicitly mentioned in the query. For example:\n" +
+              "- 'stylish summer shoes' -> category='sandals', no purpose or style filters\n" +
+              "- 'casual summer shoes' -> category='sandals', purpose='casual'\n" +
+              "- 'sport shoes for running' -> category='sneakers', purpose='sport'\n" +
+              "- 'formal dress shoes' -> category='formal', purpose='formal'\n" +
+              "When in doubt about filters, leave them as null to show more options to the user.",
           },
           {
             role: "user",
@@ -98,6 +110,20 @@ async function extractIntent(message) {
 
     try {
       const parsed = JSON.parse(content);
+
+      // Get semantic matches based on the original query
+      let semanticMatches = [];
+      try {
+        semanticMatches = await findSimilarProducts(
+          message,
+          global.products || [],
+          5
+        );
+      } catch (embeddingError) {
+        console.error("Semantic search failed:", embeddingError.message);
+        // Continue with basic search even if semantic search fails
+      }
+
       return {
         category: parsed.category || null,
         priceRange: {
@@ -109,6 +135,7 @@ async function extractIntent(message) {
           age_group: null,
           style: null,
         },
+        semanticMatches: semanticMatches, // Add semantic search results (empty array if failed)
       };
     } catch (parseError) {
       console.error("Failed to parse OpenRouter response:", content);

@@ -1,14 +1,29 @@
 # ShopBot - E-commerce Product Finder Chatbot
 
-A smart chatbot that helps users find products based on natural language queries. Built with Node.js, Express, and Svelte, powered by OpenRouter AI and featuring the HKMS (Hierarchical Keyword-Match System) v1.0.
+A smart chatbot that helps users find products based on natural language queries. Built with Node.js, Express, and Svelte, powered by OpenRouter AI and featuring STEM (Semantic Token Embedding Matching) v2.0.
+
+## Version History
+
+### v2.0.0 - Semantic Search Update (Current)
+- ✨ Implemented STEM (Semantic Token Embedding Matching)
+- 🔍 Added semantic search using embeddings for smarter product matching
+- 🌞 Enhanced category detection with seasonal awareness
+- 🎯 Improved filter handling to prevent over-filtering
+- 📝 Better handling of descriptive terms vs. specific attributes
+
+### v1.0.0 - Initial Release
+- 🤖 Basic intent extraction using HKMS
+- 💰 Price-based filtering
+- 👟 Category-based filtering
+- 🎯 Purpose-based filtering (casual, sport, formal, comfort)
 
 ## Technical Architecture
 
 ### Current Implementation: HKMS v1.0 (Hierarchical Keyword-Match System)
 The current version implements a hierarchical pattern matching system that processes natural language queries through multiple layers of analysis.
 
-### Future Implementation: STEM v2.0 (Semantic Token Embedding Matching)
-The next version will implement semantic search using embeddings for more accurate matching:
+### Current Implementation: STEM v2.0 (Semantic Token Embedding Matching)
+The current version implements semantic search using embeddings for more accurate matching:
 
 ```javascript
 // Pseudo-code for STEM v2.0
