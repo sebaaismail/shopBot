@@ -22,43 +22,106 @@ A smart chatbot that helps users find products based on natural language queries
 ### Current Implementation: HKMS v1.0 (Hierarchical Keyword-Match System)
 The current version implements a hierarchical pattern matching system that processes natural language queries through multiple layers of analysis.
 
-### Current Implementation: STEM v2.0 (Semantic Token Embedding Matching)
-The current version implements semantic search using embeddings for more accurate matching:
+## Technical Architecture: STEM v2.0
 
-```javascript
-// Pseudo-code for STEM v2.0
-class SemanticProductMatcher {
-  async computeEmbedding(text) {
-    // Using sentence-transformers or OpenRouter embedding model
-    return await embeddingModel.encode(text);
-  }
+STEM (Semantic Token Embedding Matching) v2.0 is our current implementation that combines natural language understanding with semantic search for more intelligent product matching.
 
-  async findSimilarProducts(query, threshold = 0.7) {
-    const queryEmbedding = await this.computeEmbedding(query);
-    
-    return products
-      .map(product => ({
-        product,
-        similarity: cosineSimilarity(
-          queryEmbedding,
-          product.precomputedEmbedding
-        )
-      }))
-      .filter(result => result.similarity > threshold)
-      .sort((a, b) => b.similarity - a.similarity);
-  }
-}
-```
+### Key Components
 
-## Core Concepts and Terminology
+1. **Intent Extraction**
+   ```javascript
+   {
+     "category": "sandals",        // Product category
+     "priceRange": {              // Price constraints
+       "min": 30,
+       "max": 60
+     },
+     "filters": {                 // Additional filters
+       "purpose": null,          // e.g., casual, sport, formal
+       "age_group": null,        // e.g., kids, adult
+       "style": null            // specific attributes only
+     }
+   }
+   ```
 
-### Natural Language Understanding
-- **Intent**: The underlying purpose or goal of a user's query
-  - Example: "show me running shoes under $50"
-  - Intent Components:
-    - Action: show/find/search
-    - Product Category: running shoes
-    - Constraints: price < $50
+2. **Semantic Search**
+   ```javascript
+   // Using OpenRouter's text-embedding-ada-002 model
+   const embeddings = await getEmbeddings(productDescription);
+   const similarities = computeCosineSimilarity(queryEmbedding, embeddings);
+   ```
+
+3. **Smart Filtering**
+   - Category detection with seasonal awareness
+   - Explicit vs. descriptive term handling
+   - Price range analysis
+   - Purpose-based filtering
+
+### Key Concepts
+
+1. **Intent Analysis**
+   - Query understanding based on context
+   - Seasonal awareness (e.g., "summer shoes" → sandals)
+   - Price range interpretation
+   - Purpose detection
+
+2. **Semantic Matching**
+   - Vector embeddings for text similarity
+   - Cosine similarity scoring
+   - Smart ranking of results
+   - Handling of vague queries
+
+## Chatbot Technical Terminology
+
+### Core Concepts
+
+1. **Intent**
+   - The underlying meaning and goal of a user's message
+   - Components:
+     - Primary Action (find, show, search)
+     - Target Category (sneakers, sandals, formal)
+     - Constraints (price, purpose, style)
+   - Example: "show me running shoes under $50"
+     ```javascript
+     {
+       action: "find",
+       category: "sneakers",
+       constraints: {
+         price: { max: 50 },
+         purpose: "sport"
+       }
+     }
+     ```
+
+2. **Semantic Understanding**
+   - Converting text to numerical vectors (embeddings)
+   - Measuring similarity between concepts
+   - Understanding context and relationships
+   - Example: "stylish summer shoes" semantically close to "fashionable beach sandals"
+
+3. **Entity Recognition**
+   - Identifying specific elements in text:
+     - Product Types: "sneakers", "sandals"
+     - Price Points: "under $50", "between 30 and 60"
+     - Purposes: "for running", "for work"
+     - Attributes: "comfortable", "lightweight"
+
+4. **Context Awareness**
+   - Seasonal Understanding: summer → sandals
+   - Activity Context: gym → sneakers
+   - Professional Context: office → formal
+   - Example: "professional shoes for meetings" → formal category
+
+5. **Filter Types**
+   - **Explicit Filters**
+     - Directly mentioned in query
+     - Example: "casual shoes" → purpose="casual"
+   - **Implicit Understanding**
+     - Derived from context
+     - Example: "summer shoes" → category="sandals"
+   - **Null Filters**
+     - When attributes aren't specified
+     - Prevents over-filtering
 
 ### Query Processing
 - **Token**: Individual words or phrases extracted from user input
